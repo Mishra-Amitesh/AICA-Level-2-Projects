@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Membership Payments & Receipts</title>
+<style>
+  :root{--ink:#1d2433;--muted:#667085;--line:#e3e6ec;--bg:#f6f7f9;--card:#fff;--acc:#b4531f;--acc2:#7a3510;--ok:#1f7a4a;--bad:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+  header{background:var(--acc2);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  header h1{font-size:18px;margin:0}
+  header small{opacity:.8}
+  nav{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--line);padding:0 16px;flex-wrap:wrap}
+  nav button{border:0;background:none;padding:12px 14px;font-size:14px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent}
+  nav button.active{color:var(--acc2);border-color:var(--acc);font-weight:600}
+  main{padding:18px;max-width:1200px;margin:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+  .card h2{font-size:15px;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  input,select,textarea{width:100%;padding:8px;border:1px solid #cfd4dc;border-radius:6px;font:inherit;background:#fff}
+  textarea{min-height:60px}
+  .btn{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font:inherit}
+  .btn:hover{background:var(--acc2)}
+  .btn.sec{background:#fff;color:var(--ink);border:1px solid #cfd4dc}
+  .btn.sm{padding:4px 9px;font-size:12px}
+  .btn.danger{background:#fff;color:var(--bad);border:1px solid #f0c2bd}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#fafbfc;font-weight:600;color:#475467;position:sticky;top:0}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tablewrap{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+  .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;background:#eef2f6}
+  .tag.void{background:#fde8e6;color:var(--bad)}
+  .tag.ok{background:#e3f4ea;color:var(--ok)}
+  .tag.due{background:#fff1e0;color:#9a5b00}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px}
+  .kpi b{display:block;font-size:20px;margin-top:4px}
+  .kpi span{color:var(--muted);font-size:12px}
+  .hint{color:var(--muted);font-size:12px}
+  .hidden{display:none}
+  .combo{position:relative}
+  .combo input{padding-right:28px}
+  .combo-clear{position:absolute;right:6px;top:6px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;display:none}
+  .combo.has .combo-clear{display:block}
+  .combo.has input{background:#f3faf6;border-color:#9fd3b5;font-weight:600}
+  .combo-list{position:absolute;left:0;right:0;top:100%;margin-top:2px;background:#fff;border:1px solid #cfd4dc;border-radius:6px;max-height:260px;overflow:auto;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.12);display:none}
+  .combo-list.open{display:block}
+  .combo-item{padding:7px 10px;cursor:pointer;border-bottom:1px solid #f1f2f4}
+  .combo-item small{color:var(--muted);margin-left:6px}
+  .combo-item.hl,.combo-item:hover{background:#fdf1ea}
+  .combo-item mark{background:#ffe3a3;padding:0}
+  .combo-empty{padding:8px 10px;color:var(--muted)}
+  /* Receipt */
+  #receiptModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 10px;z-index:50}
+  #receiptModal.show{display:flex}
+  .modalbox{background:#fff;border-radius:8px;max-width:760px;width:100%}
+  .modalbar{display:flex;justify-content:flex-end;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
+  .receipt{padding:28px 34px;font-family:Georgia,'Times New Roman',serif;color:#111;position:relative}
+  .rc-head{text-align:center;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px}
+  .rc-head h3{margin:0;font-size:22px;letter-spacing:.5px}
+  .rc-head p{margin:2px 0;font-size:12.5px}
+  .rc-title{display:flex;justify-content:space-between;align-items:center;margin:8px 0 16px}
+  .rc-title h4{margin:0;font-size:17px;letter-spacing:2px;border:1.5px solid #111;padding:4px 14px}
+  .rc-line{display:flex;gap:8px;margin:11px 0;font-size:14.5px}
+  .rc-line .k{white-space:nowrap}
+  .rc-line .v{flex:1;border-bottom:1px dotted #555;padding:0 4px;font-weight:bold}
+  .rc-amt{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px}
+  .rc-box{border:2px solid #111;padding:8px 16px;font-size:18px;font-weight:bold}
+  .rc-sign{text-align:center;font-size:12.5px}
+  .rc-sign div{border-top:1px solid #111;width:200px;margin-top:40px;padding-top:4px}
+  .rc-foot{text-align:center;font-size:11px;margin-top:22px;color:#444}
+  .watermark{position:absolute;top:42%;left:0;right:0;text-align:center;font-size:90px;color:rgba(180,35,24,.18);transform:rotate(-20deg);font-weight:bold;pointer-events:none}
+  @media print{
+    body *{visibility:hidden}
+    #printArea,#printArea *{visibility:visible}
+    #printArea{position:absolute;left:0;top:0;width:100%}
+    #receiptModal{background:none;padding:0;position:static}
+    .modalbar{display:none}
+    @page{size:A5 landscape;margin:8mm}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div><h1 id="hdrOrg">Organisation</h1><small>Membership Payments &amp; Receipts Register</small></div>
+  <div class="row">
+    <button class="btn sec sm" onclick="exportBackup()">⬇ Backup data</button>
+    <label class="btn sec sm" style="margin:0;color:var(--ink)">⬆ Restore backup<input type="file" accept=".json" class="hidden" onchange="importBackup(this)"></label>
+  </div>
+</header>
+<nav id="tabs">
+  <button data-t="dash" class="active">Dashboard</button>
+  <button data-t="pay">Record Payment</button>
+  <button data-t="receipts">Receipts Register</button>
+  <button data-t="members">Members</button>
+  <button data-t="dues">Dues Status</button>
+  <button data-t="settings">Settings</button>
+</nav>
+<main>
+
+<!-- DASHBOARD -->
+<section id="t-dash">
+  <div class="row" style="margin-bottom:12px"><label style="margin:0">Year</label><select id="dashYear" style="width:120px" onchange="renderDash()"></select></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card"><h2>Collections by payment type</h2><div id="byType"></div></div>
+    <div class="card"><h2>Collections by mode</h2><div id="byMode"></div></div>
+  </div>
+  <div class="card"><h2>Collections by month</h2><div id="byMonth"></div></div>
+</section>
+
+<!-- RECORD PAYMENT -->
+<section id="t-pay" class="hidden">
+  <div class="card">
+    <h2>Record a payment &amp; issue receipt</h2>
+    <div class="grid">
+      <div><label>Receipt No. (auto)</label><input id="pNo" readonly></div>
+      <div><label>Date *</label><input type="date" id="pDate"></div>
+      <div style="grid-column:span 2"><label>Member * <span class="hint">(type name, member no. or phone)</span></label>
+        <div class="combo">
+          <input id="pMemberSearch" placeholder="🔍 Search member…" autocomplete="off">
+          <button type="button" class="combo-clear" id="pMemberClear" title="Clear">×</button>
+          <input type="hidden" id="pMember">
+          <div id="pMemberList" class="combo-list"></div>
+        </div></div>
+      <div><label>Payment for *</label><select id="pType"></select></div>
+      <div><label>Period / Year</label><input id="pPeriod" list="periodList" placeholder="Pick a year or type e.g. Jan–Mar 2027" autocomplete="off"><datalist id="periodList"></datalist></div>
+      <div><label>Amount (KES) *</label><input type="number" id="pAmt" min="0" step="0.01"></div>
+      <div><label>Mode *</label><select id="pMode"></select></div>
+      <div><label>Reference (M-Pesa code / Cheque / Bank ref)</label><input id="pRef" style="text-transform:uppercase"></div>
+      <div><label>Received by</label><input id="pBy"></div>
+      <div style="grid-column:1/-1"><label>Notes</label><input id="pNotes"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="savePayment()">Save &amp; show receipt</button>
+      <button class="btn sec" onclick="resetPayForm()">Clear</button>
+      <span class="hint">No member yet? Add them in the <a href="#" onclick="tab('members');return false">Members</a> tab first.</span>
+    </div>
+  </div>
+</section>
+
+<!-- RECEIPTS REGISTER -->
+<section id="t-receipts" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Receipts register</h2>
+      <div class="row">
+        <input id="rSearch" placeholder="Search name, receipt, ref…" style="width:220px" oninput="renderReceipts()">
+        <input type="date" id="rFrom" style="width:150px" onchange="renderReceipts()">
+        <input type="date" id="rTo" style="width:150px" onchange="renderReceipts()">
+        <button class="btn sec sm" onclick="exportCSV()">Export CSV (Excel)</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="rTable"></table></div>
+    <p class="hint">Receipts are never deleted — a wrong receipt is <b>voided</b> (with reason) so the numbering sequence stays complete for audit.</p>
+  </div>
+</section>
+
+<!-- MEMBERS -->
+<section id="t-members" class="hidden">
+  <div class="card">
+    <h2 id="mFormTitle">Add member</h2>
+    <input type="hidden" id="mId">
+    <div class="grid">
+      <div><label>Member No. (auto)</label><input id="mNo" readonly></div>
+      <div><label>Full name *</label><input id="mName"></div>
+      <div><label>Phone *</label><input id="mPhone" placeholder="07XX XXX XXX"></div>
+      <div><label>Email</label><input id="mEmail"></div>
+      <div><label>Membership category</label><select id="mCat"></select></div>
+      <div><label>Date joined</label><input type="date" id="mJoin"></div>
+      <div><label>Hometown / District (UP)</label><input id="mHome"></div>
+      <div><label>Residence in Kenya</label><input id="mRes" placeholder="e.g. Westlands, Nairobi"></div>
+      <div><label>Family members (count)</label><input type="number" id="mFam" min="0"></div>
+      <div><label>Status</label><select id="mStatus"><option>Active</option><option>Inactive</option><option>Left Kenya</option></select></div>
+      <div style="grid-column:span 2"><label>Notes</label><input id="mNotes"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="saveMember()">Save member</button>
+      <button class="btn sec" onclick="resetMemberForm()">Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Members list</h2>
+      <div class="row"><input id="mSearch" placeholder="Search…" style="width:220px" oninput="renderMembers()"><button class="btn sec sm" onclick="exportMembersCSV()">Export CSV</button></div>
+    </div>
+    <div class="tablewrap"><table id="mTable"></table></div>
+  </div>
+  <div class="card hidden" id="stmtCard"></div>
+</section>
+
+<!-- DUES -->
+<section id="t-dues" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Annual subscription status</h2>
+      <div class="row"><label style="margin:0">Year</label><select id="duesYear" style="width:110px" onchange="renderDues()"></select>
+      <select id="duesFilter" style="width:150px" onchange="renderDues()"><option value="">All active members</option><option value="due">Outstanding only</option><option value="paid">Fully paid only</option></select></div>
+    </div>
+    <div id="duesSummary" class="hint" style="margin-bottom:8px"></div>
+    <div class="tablewrap"><table id="dTable"></table></div>
+    <p class="hint">Counts payments of type “Annual Subscription” whose Period contains the selected year (or, if Period is blank, whose date falls in that year). Annual fee per category is set in Settings.</p>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="t-settings" class="hidden">
+  <div class="card">
+    <h2>Organisation details (printed on receipts)</h2>
+    <div class="grid">
+      <div style="grid-column:span 2"><label>Organisation name</label><input id="sName"></div>
+      <div><label>Registration No.</label><input id="sReg"></div>
+      <div><label>KRA PIN (optional)</label><input id="sPin"></div>
+      <div style="grid-column:span 2"><label>Postal / Physical address</label><input id="sAddr"></div>
+      <div><label>Phone</label><input id="sPhone"></div>
+      <div><label>Email</label><input id="sEmail"></div>
+      <div><label>M-Pesa Paybill / Till</label><input id="sPaybill"></div>
+      <div><label>Bank details</label><input id="sBank"></div>
+      <div><label>Receipt prefix</label><input id="sPrefix"></div>
+      <div><label>Default “Received by” (Treasurer)</label><input id="sTreas"></div>
+      <div style="grid-column:1/-1"><label>Receipt footer message</label><input id="sFooter"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Lists</h2>
+    <div class="grid">
+      <div><label>Payment types (one per line)</label><textarea id="sTypes" rows="7"></textarea></div>
+      <div><label>Payment modes (one per line)</label><textarea id="sModes" rows="7"></textarea></div>
+      <div><label>Membership categories &amp; annual fee (Category = Amount)</label><textarea id="sCats" rows="7"></textarea></div>
+    </div>
+    <div class="row" style="margin-top:14px"><button class="btn" onclick="saveSettings()">Save settings</button></div>
+  </div>
+  <div class="card">
+    <h2>Data safety</h2>
+    <p>All data is saved inside <b>this browser on this computer</b> (not online). To protect it:</p>
+    <ul>
+      <li>Click <b>⬇ Backup data</b> (top right) weekly and keep the file on a USB / Google Drive / email.</li>
+      <li>To move to another computer, open this HTML file there and use <b>⬆ Restore backup</b>.</li>
+      <li>Always open the file with the same browser (e.g. Chrome). Clearing browser data will erase records if there's no backup.</li>
+    </ul>
+    <div class="row"><button class="btn sec" onclick="loadSample()">Load sample data (demo)</button><button class="btn danger" onclick="wipeAll()">Erase ALL data</button></div>
+  </div>
+</section>
+</main>
+
+<!-- RECEIPT MODAL -->
+<div id="receiptModal">
+  <div class="modalbox">
+    <div class="modalbar">
+      <button class="btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="btn sec" onclick="closeReceipt()">Close</button>
+    </div>
+    <div id="printArea"></div>
+  </div>
+</div>
+
+<script>
+const KEY='upck_membership_v1';
+const DEF_SETTINGS={
+  name:'UP Community Association – Kenya',reg:'',pin:'',addr:'P.O. Box _____, Nairobi, Kenya',phone:'',email:'',paybill:'',bank:'',
+  prefix:'UPCK',treas:'Treasurer',footer:'Thank you for supporting the community. This is a computer-generated receipt.',
+  types:['Registration Fee','Annual Subscription','Monthly Contribution','Life Membership','Event Contribution','Donation','Welfare Fund'],
+  modes:['M-Pesa','Cash','Bank Transfer','Cheque'],
+  cats:[{n:'Family',f:3000},{n:'Individual',f:2000},{n:'Student',f:500},{n:'Life Member',f:0}]
+};
+let DB=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.settings)return d;}catch(e){}return{settings:structuredClone(DEF_SETTINGS),members:[],payments:[]};}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){alert('Could not save to browser storage: '+e.message+'\nPlease take a backup.');}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>new Date().toISOString().slice(0,10);
+const dmy=d=>d?d.split('-').reverse().join('/'):'';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- amount in words ---------- */
+function words(n){
+  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const h=x=>{let s='';if(x>=100){s+=a[Math.floor(x/100)]+' Hundred';x%=100;if(x)s+=' and ';}
+    if(x>=20){s+=b[Math.floor(x/10)];if(x%10)s+='-'+a[x%10];}else if(x)s+=a[x];return s;};
+  if(n===0)return'Zero';
+  const units=[[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand']];let s='';
+  for(const[u,w]of units){if(n>=u){s+=h(Math.floor(n/u))+' '+w+' ';n%=u;}}
+  if(n){if(s&&n<100)s+='and ';s+=h(n);}return s.trim();
+}
+function amtWords(v){v=Math.round(Number(v)*100);const sh=Math.floor(v/100),ct=v%100;
+  return 'Kenya Shillings '+words(sh)+(ct?' and '+words(ct)+' Cents':'')+' Only';}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  document.querySelectorAll('main>section').forEach(s=>s.classList.toggle('hidden',s.id!=='t-'+t));
+  ({dash:renderDash,pay:preparePay,receipts:renderReceipts,members:renderMembers,dues:renderDues,settings:fillSettings})[t]();}
+
+/* ---------- numbering ---------- */
+function nextReceiptNo(date){const y=(date||today()).slice(0,4);const p=DB.settings.prefix+'/'+y+'/';
+  const nums=DB.payments.filter(x=>x.no.startsWith(p)).map(x=>parseInt(x.no.split('/').pop())||0);
+  return p+String((nums.length?Math.max(...nums):0)+1).padStart(4,'0');}
+function nextMemberNo(){const nums=DB.members.map(m=>parseInt((m.no||'').replace(/\D/g,''))||0);
+  return 'M'+String((nums.length?Math.max(...nums):0)+1).padStart(4,'0');}
+const member=id=>DB.members.find(m=>m.id===id)||{};
+const catFee=c=>(DB.settings.cats.find(x=>x.n===c)||{}).f||0;
+const opts=(arr,sel)=>arr.map(v=>`<option${v===sel?' selected':''}>${esc(v)}</option>`).join('');
+
+/* ---------- payments ---------- */
+function preparePay(){
+  if(!$('pDate').value)$('pDate').value=today();
+  $('pNo').value=nextReceiptNo($('pDate').value);
+  setPayMember($('pMember').value,true);
+  if(!$('pType').options.length||$('pType').dataset.v!==JSON.stringify(DB.settings.types)){$('pType').innerHTML=opts(DB.settings.types);$('pType').dataset.v=JSON.stringify(DB.settings.types);}
+  if(!$('pMode').options.length||$('pMode').dataset.v!==JSON.stringify(DB.settings.modes)){$('pMode').innerHTML=opts(DB.settings.modes);$('pMode').dataset.v=JSON.stringify(DB.settings.modes);}
+  if(!$('pBy').value)$('pBy').value=DB.settings.treas;
+  const cy=new Date().getFullYear();
+  $('periodList').innerHTML=[cy-1,cy,cy+1,2027].filter((v,i,a)=>a.indexOf(v)===i).sort().map(y=>`<option value="${y}">`).join('');
+  if(!$('pPeriod').value)$('pPeriod').value=$('pDate').value.slice(0,4);
+}
+$('pDate').onchange=()=>{$('pNo').value=nextReceiptNo($('pDate').value);};
+/* ---------- searchable member box ---------- */
+const mLabel=m=>`${m.no} – ${m.name} (${m.phone})`;
+let comboHits=[],comboHl=0;
+function setPayMember(id,silent){const m=DB.members.find(x=>x.id===id);
+  $('pMember').value=m?id:'';$('pMemberSearch').value=m?mLabel(m):'';
+  $('pMemberSearch').parentElement.classList.toggle('has',!!m);closeCombo();
+  if(!silent)$('pMember').onchange();}
+function closeCombo(){$('pMemberList').classList.remove('open');}
+function hiText(t,q){t=esc(t);if(!q)return t;const i=t.toLowerCase().indexOf(esc(q).toLowerCase());
+  return i<0?t:t.slice(0,i)+'<mark>'+t.slice(i,i+esc(q).length)+'</mark>'+t.slice(i+esc(q).length);}
+function openCombo(){
+  const q=$('pMember').value?'':$('pMemberSearch').value.trim().toLowerCase();
+  const qd=q.replace(/\D/g,'');
+  comboHits=DB.members.filter(m=>m.status!=='Inactive').filter(m=>!q||
+      m.name.toLowerCase().includes(q)||m.no.toLowerCase().includes(q)||(qd&&m.phone.replace(/\D/g,'').includes(qd))||(m.home||'').toLowerCase().includes(q))
+    .sort((a,b)=>{const as=a.name.toLowerCase().startsWith(q),bs=b.name.toLowerCase().startsWith(q);return as===bs?a.name.localeCompare(b.name):as?-1:1;}).slice(0,50);
+  comboHl=0;
+  $('pMemberList').innerHTML=comboHits.length?comboHits.map((m,i)=>`<div class="combo-item${i===0?' hl':''}" data-i="${i}"><b>${hiText(m.name,q)}</b><small>${hiText(m.no,q)} · ${esc(m.phone)}${m.cat?' · '+esc(m.cat):''}</small></div>`).join('')
+    :`<div class="combo-empty">No member found. <a href="#" onmousedown="event.preventDefault();tab('members')">Add new member</a></div>`;
+  $('pMemberList').classList.add('open');}
+function moveHl(d){const items=$('pMemberList').querySelectorAll('.combo-item');if(!items.length)return;
+  comboHl=(comboHl+d+items.length)%items.length;items.forEach((el,i)=>el.classList.toggle('hl',i===comboHl));items[comboHl].scrollIntoView({block:'nearest'});}
+$('pMemberSearch').addEventListener('input',()=>{if($('pMember').value){$('pMember').value='';$('pMemberSearch').parentElement.classList.remove('has');}openCombo();});
+$('pMemberSearch').addEventListener('focus',()=>{if(!$('pMember').value)openCombo();});
+$('pMemberSearch').addEventListener('click',()=>{if(!$('pMember').value)openCombo();});
+$('pMemberSearch').addEventListener('blur',()=>setTimeout(closeCombo,150));
+$('pMemberSearch').addEventListener('keydown',e=>{const open=$('pMemberList').classList.contains('open');
+  if(e.key==='ArrowDown'){e.preventDefault();open?moveHl(1):openCombo();}
+  else if(e.key==='ArrowUp'){e.preventDefault();moveHl(-1);}
+  else if(e.key==='Enter'){e.preventDefault();if(open&&comboHits[comboHl])setPayMember(comboHits[comboHl].id);}
+  else if(e.key==='Escape')closeCombo();});
+$('pMemberList').addEventListener('mousedown',e=>{const it=e.target.closest('.combo-item');if(it){e.preventDefault();setPayMember(comboHits[+it.dataset.i].id);}});
+$('pMemberClear').onclick=()=>{setPayMember('');$('pMemberSearch').focus();};
+
+$('pMember').onchange=$('pType').onchange=()=>{const m=member($('pMember').value);
+  if($('pType').value==='Annual Subscription'&&m.cat&&!$('pAmt').value)$('pAmt').value=catFee(m.cat)||'';};
+function savePayment(){
+  const p={id:uid(),date:$('pDate').value,memberId:$('pMember').value,type:$('pType').value,period:$('pPeriod').value.trim(),
+    amount:parseFloat($('pAmt').value),mode:$('pMode').value,ref:$('pRef').value.trim().toUpperCase(),by:$('pBy').value.trim(),notes:$('pNotes').value.trim(),void:false,created:new Date().toISOString()};
+  if(!p.date||!p.memberId||!p.type||!(p.amount>0)||!p.mode)return alert('Please fill Date, Member, Payment for, Amount and Mode.');
+  if(p.mode!=='Cash'&&!p.ref&&!confirm('No reference (e.g. M-Pesa code) entered. Continue?'))return;
+  if(p.ref&&DB.payments.some(x=>!x.void&&x.ref===p.ref)&&!confirm('Reference '+p.ref+' is already used on another receipt. Possible duplicate. Save anyway?'))return;
+  p.no=nextReceiptNo(p.date);
+  DB.payments.push(p);persist();resetPayForm();showReceipt(p.id);
+}
+function resetPayForm(){['pAmt','pRef','pNotes','pPeriod'].forEach(i=>$(i).value='');setPayMember('',true);$('pDate').value=today();preparePay();}
+
+/* ---------- receipt ---------- */
+function showReceipt(id){
+  const p=DB.payments.find(x=>x.id===id),m=member(p.memberId),s=DB.settings;
+  const contact=[s.phone&&'Tel: '+s.phone,s.email&&'Email: '+s.email].filter(Boolean).join(' | ');
+  const regs=[s.reg&&'Reg. No: '+s.reg,s.pin&&'PIN: '+s.pin].filter(Boolean).join(' | ');
+  $('printArea').innerHTML=`<div class="receipt">
+    ${p.void?'<div class="watermark">VOID</div>':''}
+    <div class="rc-head"><h3>${esc(s.name)}</h3>${s.addr?`<p>${esc(s.addr)}</p>`:''}${contact?`<p>${esc(contact)}</p>`:''}${regs?`<p>${esc(regs)}</p>`:''}</div>
+    <div class="rc-title"><div>No: <b style="font-size:16px">${esc(p.no)}</b></div><h4>OFFICIAL RECEIPT</h4><div>Date: <b>${dmy(p.date)}</b></div></div>
+    <div class="rc-line"><span class="k">Received from</span><span class="v">${esc(m.name||'—')}</span><span class="k">Member No.</span><span class="v" style="flex:0 0 90px">${esc(m.no||'')}</span></div>
+    <div class="rc-line"><span class="k">The sum of</span><span class="v">${esc(amtWords(p.amount))}</span></div>
+    <div class="rc-line"><span class="k">Being payment for</span><span class="v">${esc(p.type)}${p.period?' – '+esc(p.period):''}${p.notes?' ('+esc(p.notes)+')':''}</span></div>
+    <div class="rc-line"><span class="k">Payment mode</span><span class="v">${esc(p.mode)}</span><span class="k">Ref.</span><span class="v">${esc(p.ref||'—')}</span></div>
+    <div class="rc-amt"><div class="rc-box">KES ${fmt(p.amount)}</div>
+      <div class="rc-sign"><div>Received by: ${esc(p.by||s.treas)}</div></div></div>
+    ${p.void?`<p style="color:#b42318;margin-top:14px"><b>VOIDED</b> on ${dmy(p.voidDate)} – ${esc(p.voidReason)}</p>`:''}
+    <div class="rc-foot">${esc(s.footer)}</div></div>`;
+  $('receiptModal').classList.add('show');
+}
+function closeReceipt(){$('receiptModal').classList.remove('show');}
+function voidReceipt(id){const p=DB.payments.find(x=>x.id===id);const r=prompt('Reason for voiding receipt '+p.no+':');
+  if(!r)return;p.void=true;p.voidReason=r;p.voidDate=today();persist();renderReceipts();}
+
+function filteredPayments(){const q=$('rSearch').value.toLowerCase(),f=$('rFrom').value,t=$('rTo').value;
+  return DB.payments.filter(p=>{const m=member(p.memberId);
+    if(f&&p.date<f)return false;if(t&&p.date>t)return false;
+    return !q||[p.no,m.name,m.no,m.phone,p.ref,p.type,p.mode].join(' ').toLowerCase().includes(q);})
+    .sort((a,b)=>b.date.localeCompare(a.date)||b.no.localeCompare(a.no));}
+function renderReceipts(){const rows=filteredPayments();let tot=0;
+  $('rTable').innerHTML='<tr><th>Receipt No.</th><th>Date</th><th>Member</th><th>For</th><th>Period</th><th>Mode</th><th>Ref</th><th class="num">Amount</th><th>Status</th><th></th></tr>'+
+  rows.map(p=>{const m=member(p.memberId);if(!p.void)tot+=p.amount;
+    return `<tr><td>${esc(p.no)}</td><td>${dmy(p.date)}</td><td>${esc(m.name)}<br><span class="hint">${esc(m.no)}</span></td><td>${esc(p.type)}</td><td>${esc(p.period)}</td><td>${esc(p.mode)}</td><td>${esc(p.ref)}</td>
+    <td class="num">${fmt(p.amount)}</td><td>${p.void?'<span class="tag void" title="'+esc(p.voidReason)+'">Void</span>':'<span class="tag ok">Valid</span>'}</td>
+    <td style="white-space:nowrap"><button class="btn sm sec" onclick="showReceipt('${p.id}')">Receipt</button> ${p.void?'':`<button class="btn sm danger" onclick="voidReceipt('${p.id}')">Void</button>`}</td></tr>`;}).join('')+
+  `<tr><th colspan="7">Total (valid receipts: ${rows.filter(p=>!p.void).length})</th><th class="num">${fmt(tot)}</th><th colspan="2"></th></tr>`;}
+
+/* ---------- members ---------- */
+function renderMembers(){
+  $('mCat').innerHTML=opts(DB.settings.cats.map(c=>c.n),$('mCat').value);
+  if(!$('mId').value)$('mNo').value=nextMemberNo();
+  if(!$('mJoin').value)$('mJoin').value=today();
+  const q=$('mSearch').value.toLowerCase();
+  const list=DB.members.filter(m=>!q||Object.values(m).join(' ').toLowerCase().includes(q)).sort((a,b)=>a.no.localeCompare(b.no));
+  $('mTable').innerHTML='<tr><th>No.</th><th>Name</th><th>Phone</th><th>Category</th><th>Joined</th><th>Hometown</th><th>Status</th><th class="num">Total paid</th><th></th></tr>'+
+  list.map(m=>`<tr><td>${esc(m.no)}</td><td>${esc(m.name)}<br><span class="hint">${esc(m.email)}</span></td><td>${esc(m.phone)}</td><td>${esc(m.cat)}</td><td>${dmy(m.join)}</td><td>${esc(m.home)}</td><td>${esc(m.status)}</td>
+    <td class="num">${fmt(DB.payments.filter(p=>p.memberId===m.id&&!p.void).reduce((s,p)=>s+p.amount,0))}</td>
+    <td style="white-space:nowrap"><button class="btn sm sec" onclick="editMember('${m.id}')">Edit</button> <button class="btn sm sec" onclick="statement('${m.id}')">Statement</button> <button class="btn sm" onclick="payFor('${m.id}')">+ Pay</button></td></tr>`).join('')||'<tr><td colspan="9" class="hint">No members yet.</td></tr>';}
+function saveMember(){
+  const id=$('mId').value||uid();
+  const m={id,no:$('mNo').value,name:$('mName').value.trim(),phone:$('mPhone').value.trim(),email:$('mEmail').value.trim(),cat:$('mCat').value,join:$('mJoin').value,
+    home:$('mHome').value.trim(),res:$('mRes').value.trim(),fam:$('mFam').value,status:$('mStatus').value,notes:$('mNotes').value.trim()};
+  if(!m.name||!m.phone)return alert('Name and phone are required.');
+  if(DB.members.some(x=>x.id!==id&&x.phone.replace(/\D/g,'')===m.phone.replace(/\D/g,''))&&!confirm('Another member has this phone number. Save anyway?'))return;
+  const i=DB.members.findIndex(x=>x.id===id);if(i>=0)DB.members[i]=m;else DB.members.push(m);
+  persist();resetMemberForm();}
+function editMember(id){const m=member(id);$('mId').value=m.id;$('mNo').value=m.no;$('mName').value=m.name;$('mPhone').value=m.phone;$('mEmail').value=m.email||'';
+  $('mCat').value=m.cat;$('mJoin').value=m.join||'';$('mHome').value=m.home||'';$('mRes').value=m.res||'';$('mFam').value=m.fam||'';$('mStatus').value=m.status||'Active';$('mNotes').value=m.notes||'';
+  $('mFormTitle').textContent='Edit member '+m.no;window.scrollTo({top:0,behavior:'smooth'});}
+function resetMemberForm(){['mId','mName','mPhone','mEmail','mHome','mRes','mFam','mNotes','mJoin'].forEach(i=>$(i).value='');$('mStatus').value='Active';$('mFormTitle').textContent='Add member';renderMembers();}
+function payFor(id){tab('pay');setPayMember(id);}
+function statement(id){const m=member(id);const ps=DB.payments.filter(p=>p.memberId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  const tot=ps.filter(p=>!p.void).reduce((s,p)=>s+p.amount,0);
+  $('stmtCard').classList.remove('hidden');
+  $('stmtCard').innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0">Statement – ${esc(m.no)} ${esc(m.name)}</h2><button class="btn sm sec" onclick="$('stmtCard').classList.add('hidden')">Close</button></div><br>
+  <table><tr><th>Date</th><th>Receipt</th><th>For</th><th>Period</th><th>Mode / Ref</th><th class="num">Amount</th><th></th></tr>
+  ${ps.map(p=>`<tr${p.void?' style="text-decoration:line-through;color:#999"':''}><td>${dmy(p.date)}</td><td>${esc(p.no)}</td><td>${esc(p.type)}</td><td>${esc(p.period)}</td><td>${esc(p.mode)} ${esc(p.ref)}</td><td class="num">${fmt(p.amount)}</td><td><button class="btn sm sec" onclick="showReceipt('${p.id}')">View</button></td></tr>`).join('')||'<tr><td colspan="7" class="hint">No payments.</td></tr>'}
+  <tr><th colspan="5">Total paid</th><th class="num">${fmt(tot)}</th><th></th></tr></table>`;
+  $('stmtCard').scrollIntoView({behavior:'smooth'});}
+
+/* ---------- dues ---------- */
+function years(){const cy=new Date().getFullYear();const ys=new Set([cy,cy+1,2027]);
+  DB.payments.forEach(p=>{ys.add(+p.date.slice(0,4));(p.period||'').match(/20\d\d/g)?.forEach(y=>ys.add(+y));});return[...ys].sort((a,b)=>b-a);}
+function fillYears(sel){const v=sel.value;sel.innerHTML=years().map(y=>`<option>${y}</option>`).join('');if(v)sel.value=v;}
+function renderDues(){fillYears($('duesYear'));const y=$('duesYear').value,f=$('duesFilter').value;let tf=0,tp=0,nd=0;
+  const rows=DB.members.filter(m=>m.status==='Active').map(m=>{const fee=catFee(m.cat);
+    const paid=DB.payments.filter(p=>!p.void&&p.memberId===m.id&&p.type==='Annual Subscription'&&(p.period?p.period.includes(y):p.date.startsWith(y))).reduce((s,p)=>s+p.amount,0);
+    return{m,fee,paid,bal:Math.max(fee-paid,0)};}).filter(r=>!f||(f==='due'?r.bal>0:r.bal===0));
+  rows.forEach(r=>{tf+=r.fee;tp+=r.paid;if(r.bal>0)nd++;});
+  $('duesSummary').innerHTML=`Expected: <b>KES ${fmt(tf)}</b> &nbsp; Collected: <b>KES ${fmt(tp)}</b> &nbsp; Outstanding: <b>KES ${fmt(Math.max(tf-tp,0))}</b> &nbsp; Members with balance: <b>${nd}</b>`;
+  $('dTable').innerHTML='<tr><th>No.</th><th>Name</th><th>Phone</th><th>Category</th><th class="num">Fee</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th></tr>'+
+  rows.map(r=>`<tr><td>${esc(r.m.no)}</td><td>${esc(r.m.name)}</td><td>${esc(r.m.phone)}</td><td>${esc(r.m.cat)}</td><td class="num">${fmt(r.fee)}</td><td class="num">${fmt(r.paid)}</td><td class="num">${fmt(r.bal)}</td>
+  <td>${r.fee===0?'<span class="tag">Exempt</span>':r.bal>0?'<span class="tag due">Outstanding</span>':'<span class="tag ok">Paid</span>'}</td></tr>`).join('')||'<tr><td colspan="8" class="hint">No members.</td></tr>';}
+
+/* ---------- dashboard ---------- */
+function renderDash(){fillYears($('dashYear'));const y=$('dashYear').value;const ps=DB.payments.filter(p=>!p.void&&p.date.startsWith(y));
+  const tot=ps.reduce((s,p)=>s+p.amount,0);const act=DB.members.filter(m=>m.status==='Active').length;
+  const payers=new Set(ps.map(p=>p.memberId)).size;
+  $('kpis').innerHTML=[['Collected in '+y,'KES '+fmt(tot)],['Receipts issued',ps.length],['Active members',act],['Members who paid in '+y,payers],['Voided receipts',DB.payments.filter(p=>p.void&&p.date.startsWith(y)).length]]
+    .map(([a,b])=>`<div class="kpi"><span>${a}</span><b>${b}</b></div>`).join('');
+  const group=(key)=>{const g={};ps.forEach(p=>g[key(p)]=(g[key(p)]||0)+p.amount);return g;};
+  const tbl=(g,order)=>{const ks=order||Object.keys(g).sort((a,b)=>g[b]-g[a]);return '<table>'+ks.map(k=>`<tr><td>${esc(k)}</td><td class="num">${fmt(g[k]||0)}</td><td style="width:40%"><div style="background:var(--acc);height:8px;border-radius:4px;width:${tot?((g[k]||0)/tot*100):0}%"></div></td></tr>`).join('')+`<tr><th>Total</th><th class="num">${fmt(tot)}</th><th></th></tr></table>`;};
+  $('byType').innerHTML=tbl(group(p=>p.type));$('byMode').innerHTML=tbl(group(p=>p.mode));
+  const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('byMonth').innerHTML=tbl(group(p=>mn[+p.date.slice(5,7)-1]),mn);}
+
+/* ---------- settings ---------- */
+function fillSettings(){const s=DB.settings;
+  [['sName','name'],['sReg','reg'],['sPin','pin'],['sAddr','addr'],['sPhone','phone'],['sEmail','email'],['sPaybill','paybill'],['sBank','bank'],['sPrefix','prefix'],['sTreas','treas'],['sFooter','footer']].forEach(([i,k])=>$(i).value=s[k]||'');
+  $('sTypes').value=s.types.join('\n');$('sModes').value=s.modes.join('\n');$('sCats').value=s.cats.map(c=>c.n+' = '+c.f).join('\n');}
+function saveSettings(){const s=DB.settings;
+  [['sName','name'],['sReg','reg'],['sPin','pin'],['sAddr','addr'],['sPhone','phone'],['sEmail','email'],['sPaybill','paybill'],['sBank','bank'],['sPrefix','prefix'],['sTreas','treas'],['sFooter','footer']].forEach(([i,k])=>s[k]=$(i).value.trim());
+  s.prefix=s.prefix.replace(/[\/\s]/g,'')||'RCPT';
+  const lines=v=>v.split('\n').map(x=>x.trim()).filter(Boolean);
+  s.types=lines($('sTypes').value);s.modes=lines($('sModes').value);
+  s.cats=lines($('sCats').value).map(l=>{const[n,f]=l.split('=');return{n:n.trim(),f:parseFloat(f)||0};});
+  if(s.paybill&&!s.footer.includes(s.paybill)){}
+  persist();hdr();alert('Settings saved.');}
+function hdr(){$('hdrOrg').textContent=DB.settings.name;document.title=DB.settings.name+' – Receipts';}
+
+/* ---------- import/export ---------- */
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function exportBackup(){download('membership_backup_'+today()+'.json',JSON.stringify(DB,null,1),'application/json');}
+function importBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
+  if(!d.settings||!Array.isArray(d.members)||!Array.isArray(d.payments))throw new Error('Not a valid backup file');
+  if(!confirm(`Restore backup with ${d.members.length} members and ${d.payments.length} receipts? Current data will be replaced.`))return;
+  DB=d;persist();hdr();tab('dash');alert('Backup restored.');}catch(e){alert('Restore failed: '+e.message);}inp.value='';};r.readAsText(f);}
+const csvCell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+function exportCSV(){const rows=[['Receipt No','Date','Member No','Member Name','Phone','Payment For','Period','Mode','Reference','Amount (KES)','Received By','Notes','Status','Void Reason']];
+  filteredPayments().slice().reverse().forEach(p=>{const m=member(p.memberId);rows.push([p.no,p.date,m.no,m.name,m.phone,p.type,p.period,p.mode,p.ref,p.amount,p.by,p.notes,p.void?'VOID':'Valid',p.voidReason||'']);});
+  download('receipts_register_'+today()+'.csv','﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv');}
+function exportMembersCSV(){const rows=[['Member No','Name','Phone','Email','Category','Joined','Hometown (UP)','Residence','Family Count','Status','Notes']];
+  DB.members.forEach(m=>rows.push([m.no,m.name,m.phone,m.email,m.cat,m.join,m.home,m.res,m.fam,m.status,m.notes]));
+  download('members_'+today()+'.csv','﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv');}
+function wipeAll(){if(prompt('Type DELETE to erase all members and receipts (take a backup first!)')!=='DELETE')return;
+  DB={settings:DB.settings,members:[],payments:[]};persist();tab('dash');}
+function loadSample(){if(DB.members.length&&!confirm('Add sample records to existing data?'))return;
+  const y=new Date().getFullYear();
+  const ms=[['Rajesh Kumar Srivastava','0722 111 222','Family','Lucknow','Westlands'],['Sunita Mishra','0733 444 555','Family','Varanasi','Parklands'],['Anil Tiwari','0711 987 654','Individual','Kanpur','Mombasa'],['Priya Pandey','0700 123 789','Student','Prayagraj','Kileleshwa']];
+  ms.forEach(([name,phone,cat,home,res])=>DB.members.push({id:uid(),no:nextMemberNo(),name,phone,email:'',cat,join:y+'-01-15',home,res,fam:'',status:'Active',notes:'Sample'}));
+  const ids=DB.members.slice(-4).map(m=>m.id);
+  [[0,'Registration Fee',1000,'M-Pesa','SAMP1A2B3C'],[0,'Annual Subscription',3000,'M-Pesa','SAMP4D5E6F'],[1,'Annual Subscription',1500,'Cash',''],[2,'Annual Subscription',2000,'Bank Transfer','FT26001234'],[3,'Event Contribution',500,'M-Pesa','SAMP7G8H9I']]
+   .forEach(([i,type,amount,mode,ref],k)=>{const date=`${y}-0${k+2}-1${k}`;DB.payments.push({id:uid(),no:nextReceiptNo(date),date,memberId:ids[i],type,period:String(y),amount,mode,ref,by:DB.settings.treas,notes:type==='Event Contribution'?'Diwali Milan':'',void:false});});
+  persist();tab('dash');}
+
+hdr();tab('dash');
+</script>
+</body>
+</html>
